@@ -1,18 +1,34 @@
 import re
 
-def parse_prefix_tag(text: str) -> List[str]:
+def chunk_by_grade_headers(text):
     """
-    Splits curriculum text into atomic objectives using regex heuristics.
-    Assumes objectives are numbered or bulleted.
+    Extracts curriculum chunks between grade-level headers.
+    Returns a list of dicts: {grade, chunk}
     """
-    # Example: matches lines starting with digits or bullets
-    # Case-insensitive pattern
-    # Use non-capturing group or no group at all
-    pattern = r"(.*?)\b((?:K|\d{1,2})\.[A-Z]{1,4})\b"
-
-    matches = re.findall(pattern, text, flags=re.IGNORECASE)#flags=re.MULTILINE
-    return matches
-
+    # Match headers like "mathematics | Grade 3" or "mathematics | Kindergarten"
+    header_pattern = r"(mathematics\s*\|\s*(Kindergarten|Grade\s+\d+))"
+    
+    # Find all headers and their positions
+    headers = []
+    for match in re.finditer(header_pattern, text, re.IGNORECASE):
+        label = match.group(1).strip()
+        grade = match.group(2).strip()
+        start_idx = match.start()
+        headers.append((grade, start_idx))
+    
+    # Chunk between headers
+    chunks = []
+    for i in range(len(headers) - 1):
+        grade, start = headers[i]
+        end = headers[i + 1][1]
+        chunk_text = text[start:end].strip()
+        chunks.append({"grade": grade, "chunk": chunk_text})
+    
+    # Final chunk (Grade 8)
+    last_grade, last_start = headers[-1]
+    chunks.append({"grade": last_grade, "chunk": text[last_start:].strip()})
+    
+    return chunks
 
 def extract_domain_chunks(text):
     """
